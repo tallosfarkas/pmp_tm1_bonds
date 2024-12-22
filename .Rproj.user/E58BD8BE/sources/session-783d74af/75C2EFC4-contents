@@ -1,0 +1,300 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage[a4paper, margin=0.5in]{geometry}
+\usepackage{graphicx} 
+\usepackage{hyperref} 
+\usepackage{bookmark}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+
+
+\title{Statistics 1 Unit 3 Team 5}
+\author{Team 5}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section*{60. Exercise}
+
+The \(Pareto(a,b)\) c.d.f. is given by:
+
+\[
+F(x) = 1 - \left(\frac{b}{x}\right)^a \quad x \geq b > 0, \, a > 0
+\]
+
+Using the inverse transform method: \(X = F^{-1}(U) \implies F(X) = U \sim Uniform(0,1)\). Now we solve for \(x\): 
+
+\[
+U = 1 - \left(\frac{b}{x}\right)^a
+\]
+
+\[
+x = b \cdot (1 - U)^{-\frac{1}{a}}
+\]
+
+Therefore, 
+\[
+b \cdot (1-U)^{-\frac{1}{a}} \sim Pareto(a, b)
+\]. 
+
+Now, we can find the actual density function by taking the derivative of the distribution function:
+
+\[
+f(x) = \frac{\partial}{\partial x} F(x)
+\]
+
+\[
+= \frac{\partial}{\partial x} \left(1 - \left(\frac{b}{x}\right)^a\right)
+\]
+
+\[
+= -b^a \cdot (-a) \cdot x^{-a-1}
+\]
+
+\[
+= a \cdot \frac{b^a}{x^{a+1}}
+\]
+<<60_ex, echo=TRUE, results='markup'>>=
+
+# Setting a and b to 2 to simulate Pareto(2,2)
+a<- 2
+b <- 2
+n <- 1e5
+
+# x is what we found using inverse transform method 
+x <- b*((1-runif(n))^(-1/a))
+y <- seq(b, max(x), by=0.02)
+y_density <- (a*(b^a))/(y^(a+1)) # The actual density curve 
+
+# Histogram of the Pareto density function using inverse transformation
+hist(x, probability = TRUE, xlim = c(b, 25), breaks = 1500, 
+     main = paste0("Random sample simulation on Pareto(2,2)"))
+lines(y, y_density, col="blue")
+@
+
+The histogram indicates the density of the Pareto distribution by using the inverse transformation method which transforms uniform distributed values into any distribution, in our case the Pareto distribution(2,2). The blue line is the actual density of the Pareto distribution(2,2). 
+
+\section*{61. Exercise}
+
+The cumulative distribution function (CDF) of the generalized Pareto distribution (GPD) is given by:
+
+\[
+F(x) = 1 - \left( 1 + \xi \frac{x - \mu}{\sigma} \right)^{-1/\xi}, \quad \xi \neq 0,
+\]
+
+where $\mu \in \mathbb{R}$ is the location parameter, $\sigma > 0$ is the scale parameter, and $\xi \in \mathbb{R}$ is the shape parameter.
+
+The GPD reduces to an exponential distribution as $\xi \to 0$, consider the term inside the CDF:
+
+\[
+1 + \xi \frac{x - \mu}{\sigma}.
+\]
+
+For small values of $\xi$, we use the logarithmic approximation $\log(1 + \xi z) \sim \xi z$ for $\xi \to 0$, where $z = \frac{x - \mu}{\sigma}$. Therefore:
+
+\[
+\left( 1 + \xi \frac{x - \mu}{\sigma} \right)^{-1/\xi} \approx \exp\left( -\frac{x - \mu}{\sigma} \right).
+\]
+
+Substituting this into the CDF, we get:
+
+\[
+F(x) \approx 1 - \exp\left( -\frac{x - \mu}{\sigma} \right).
+\]
+
+Thus, as $\xi \to 0$, the GPD reduces to the exponential distribution with rate parameter $\lambda = \frac{1}{\sigma}$.
+
+The support of the GPD depends on the value of the shape parameter $\xi$:
+
+\textbf{Case 1: $\xi \geq 0$}  
+From the CDF, the condition $1 + \xi \frac{x - \mu}{\sigma} > 0$ implies:
+
+\[
+x \geq \mu.
+\]
+
+Therefore, the support is:
+
+\[
+[\mu, \infty).
+\]
+
+\textbf{Case 2: $\xi < 0$}  
+When $\xi < 0$, the condition $1 + \xi \frac{x - \mu}{\sigma} > 0$ gives:
+
+\[
+x < \mu - \frac{\sigma}{\xi}.
+\]
+
+Thus, the support is:
+
+\[
+\left[ \mu, \mu - \frac{\sigma}{\xi} \right].
+\]
+
+\section*{62. Exercise}
+The Generalized Pareto Distribution (GPD) has the following cumulative distribution function (CDF):
+
+\[
+F(x) =
+\begin{cases}
+1 - \left(1 + \xi \frac{x - \mu}{\sigma}\right)^{-1/\xi}, & \xi \neq 0, \\
+1 - e^{-\frac{x - \mu}{\sigma}}, & \xi = 0.
+\end{cases}
+\]
+
+
+The support of $x$ depends on $\xi$:
+\[
+x \in 
+\begin{cases}
+[\mu, \infty), & \xi \geq 0, \\
+[\mu, \mu - \frac{\sigma}{\xi}], & \xi < 0.
+\end{cases}
+\]
+
+We derive the inverse CDF method to sample from the GPD.
+
+We use the inverse transform method:
+\begin{enumerate}
+    \item Let $U \sim \text{Uniform}(0, 1)$.
+    \item Set $F(X) = U$ and solve for $X$.
+\end{enumerate}
+
+\paragraph{$\xi \neq 0$}
+Start with the CDF:
+\[
+U = 1 - \left(1 + \xi \frac{x - \mu}{\sigma}\right)^{-1/\xi}.
+\]
+Rearranging gives:
+\[
+1 - U = \left(1 + \xi \frac{x - \mu}{\sigma}\right)^{-1/\xi}.
+\]
+Raise both sides to $-\xi$:
+\[
+(1 - U)^{-\xi} = 1 + \xi \frac{x - \mu}{\sigma}.
+\]
+Solve for $x$:
+\[
+x = \mu + \frac{\sigma}{\xi} \left( (1 - U)^{-\xi} - 1 \right).
+\]
+
+\paragraph{$\xi = 0$}
+the CDF simplifies to:
+\[
+U = 1 - e^{-\frac{x - \mu}{\sigma}}.
+\]
+Rearranging:
+\[
+e^{-\frac{x - \mu}{\sigma}} = 1 - U.
+\]
+Taking the natural logarithm:
+\[
+x = \mu - \sigma \ln(1 - U).
+\]
+
+The inverse CDF for the GPD is:
+\[
+x =
+\begin{cases}
+\mu + \frac{\sigma}{\xi} \left( (1 - U)^{-\xi} - 1 \right), & \xi \neq 0, \\
+\mu - \sigma \ln(1 - U), & \xi = 0.
+\end{cases}
+\]
+
+<<62_ex, echo=TRUE, results='markup'>>=
+pareto_sim <- function(mu, sigma, xi, n = 1e5) {
+  # Check if sigma is valid
+  if (sigma <= 0) {
+    stop("Sigma should be greater than 0")
+  } 
+  
+  # Generate samples based on xi
+  if (xi == 0) {
+    x.temp <- mu - sigma * log(runif(n))  # Exponential case
+  } else {
+    x.temp <- mu + (sigma / xi) * (runif(n)^(-xi) - 1)  # General case
+  }
+  
+  # Apply support conditions
+  if (xi < 0) {
+    x <- x.temp[x.temp >= mu & x.temp <= (mu - sigma / xi)]
+  } else {
+    x <- x.temp[x.temp >= mu]
+  }
+  
+  # Define range for density calculation
+  y <- seq(mu, max(x), by = 0.02)
+  
+  # Calculate theoretical PDF
+  if (xi == 0) {
+    y.p <- (1 / sigma) * exp(-(y - mu) / sigma)  # Exponential PDF
+  } else {
+    y.p <- (1 / sigma) * ((1 + xi * (y - mu) / sigma)^(-(1 / xi) - 1))  # GPD PDF
+  }
+  
+  # Plot histogram and PDF
+  hist(x, probability = TRUE, xlim = c(mu, min(max(x), 25)), breaks = 1250,
+       main = paste0("Simulation of Random Sample on Generalized Pareto (",
+                     "mu = ", mu, ", sigma = ", sigma, ", xi = ", xi, ")"),
+       xlab = "x", col = "lightgray", border = "white")
+  lines(y, y.p, col = "blue", lwd = 1)
+}
+
+pareto_sim(0, 1, 0.5)
+@
+
+The histogram gives a visual of the density of the random sample draw from the uniform distribution. The Blue line represents the actual density.
+
+\section*{63. Exercise}
+
+First we convert the probability distribution into a cumulative distribution function. Below is the cdf:
+
+\[
+F(x) = 
+\begin{cases}
+0, & x < 0; \\
+0.1, & 0 \leq x < 1; \\
+0.3, & 1 \leq x < 2; \\
+0.5, & 2 \leq x < 3; \\
+0.7, & 3 \leq x < 4; \\
+1, & x \geq 4.
+\end{cases}
+\]
+
+<<63_ex, echo=TRUE, results='markup'>>=
+# Transform Uniform Distribution to Discrete Distribution
+dt <- function(n) {
+  x1 <- runif(n)  # Generate n random uniform numbers
+  
+  # Transformation function
+  transf <- function(i) {
+    if (i < 0.1) return(0)
+    else if (i < 0.3) return(1)
+    else if (i < 0.5) return(2)
+    else if (i < 0.7) return(3)
+    else return(4)
+  }
+  
+  # Apply the transformation to the generated uniform numbers
+  x <- vapply(x1, transf, 0)
+  return(table(x) / n)  # Return normalized frequency table
+}
+
+# Direct Sampling from a Discrete Distribution
+ds <- function(n) {
+  # Sample from the discrete set {0, 1, 2, 3, 4} with given probabilities
+  x <- sample(c(0, 1, 2, 3, 4), n, replace = TRUE,
+              prob = c(0.1, 0.2, 0.2, 0.2, 0.3))
+  return(table(x) / n)  # Return normalized frequency table
+}
+
+dt(1000)
+ds(1000)
+
+@
+
+As we can see the results from both methods are similar, although not the same. 
+\end{document}
