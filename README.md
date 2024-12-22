@@ -5,6 +5,10 @@ This repository contains the files and data necessary for working on bond-relate
 
 ---
 
+# **If you don't have git installed, first install it from here:**
+https://git-scm.com/downloads
+
+
 ## **Getting Started with This Repository in RStudio**
 
 ### **Step 1: Clone the Repository**
