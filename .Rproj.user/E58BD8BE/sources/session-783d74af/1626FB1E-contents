@@ -1,0 +1,10 @@
+library(readxl)
+
+# Load Excel file into a data frame
+CPI <- read_excel("DT_cpi_final.xlsx", sheet = "CPI")
+CPI$Year <- as.Date(CPI$Date)
+
+
+save(Bonds_prices_3M, Bonds_prices_1Y,Exchange_rates,B_1Y_Tickers,B_3M_Tickers,FX_names,Tickers,CPI, file = "Bond_PX_FX_CPI.RData")
+
+load("Bond_PX_FX_CPI.RData")
