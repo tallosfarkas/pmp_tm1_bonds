@@ -422,22 +422,22 @@ Merged_Bonds_FX <- Merged_Bonds_FX %>%
 
 
 ################################################################### added by Farkas ###################################################################
-# Example: floor small values in P_3M, P_10Y columns
-# Suppose you have these columns in your final data frames:
-#   P_3M, P_10Y, P_3M_prev, P_10Y_prev, etc.
-
-Merged_Bonds_FX <- Merged_Bonds_FX %>%
-  mutate(
-    # If any of these are smaller than 1e-8 in absolute value, set them to 1e-8
-    P_3M      = if_else(abs(P_3M) < 1e-8, 1e-8, P_3M),
-    P_10Y     = if_else(abs(P_10Y) < 1e-8, 1e-8, P_10Y),
-    P_3M_prev = if_else(abs(P_3M_prev) < 1e-8, 1e-8, P_3M_prev),
-    P_10Y_prev= if_else(abs(P_10Y_prev) < 1e-8, 1e-8, P_10Y_prev)
-  ) %>%
-  # then (re)compute your excess_return
-  mutate(
-    excess_return = (((P_10Y - P_3M) / P_10Y_prev) - (1 / P_3M_prev)) * (FX / FX_prev)
-  )
+# # Example: floor small values in P_3M, P_10Y columns
+# # Suppose you have these columns in your final data frames:
+# #   P_3M, P_10Y, P_3M_prev, P_10Y_prev, etc.
+# 
+# Merged_Bonds_FX <- Merged_Bonds_FX %>%
+#   mutate(
+#     # If any of these are smaller than 1e-8 in absolute value, set them to 1e-8
+#     P_3M      = if_else(abs(P_3M) < 1e-8, 1e-8, P_3M),
+#     P_10Y     = if_else(abs(P_10Y) < 1e-8, 1e-8, P_10Y),
+#     P_3M_prev = if_else(abs(P_3M_prev) < 1e-8, 1e-8, P_3M_prev),
+#     P_10Y_prev= if_else(abs(P_10Y_prev) < 1e-8, 1e-8, P_10Y_prev)
+#   ) %>%
+#   # then (re)compute your excess_return
+#   mutate(
+#     excess_return = (((P_10Y - P_3M) / P_10Y_prev) - (1 / P_3M_prev)) * (FX / FX_prev)
+#   )
 
 
 ##########################################################################
@@ -454,42 +454,42 @@ Bonds_ex_ret_wide <- Bonds_ex_ret_long %>%
 annualized_returns <- Bonds_ex_ret_wide %>%
   mutate(across(-date, ~ (1 + .)^12 - 1))
 
-#######################################################################
-library(dplyr)
-library(tidyr)
-library(zoo)
-
-# Assume 'annualized_returns' has columns: date, plus one column per country
-# e.g. date, UNITED STATES, GERMANY, JAPAN, etc.
-
-annualized_returns_chopped <- annualized_returns %>%
-  # 1) Pivot to long format
-  pivot_longer(
-    cols = -date,
-    names_to = "Country",
-    values_to = "AnnReturn"
-  ) %>%
-  # 2) Arrange by date & group by country
-  group_by(Country) %>%
-  arrange(date, .by_group = TRUE) %>%
-  # 3) Chop values above +500% or below -500% (±5 in decimal), replace w/ NA
-  mutate(
-    AnnReturn = if_else(abs(AnnReturn) > 10, NA_real_, AnnReturn)
-  ) %>%
-  # 4) Fill newly introduced NAs forward, then backward
-  mutate(
-    AnnReturn = na.locf(AnnReturn, na.rm = FALSE),          # forward fill
-    AnnReturn = na.locf(AnnReturn, fromLast = TRUE, na.rm = FALSE) # backward fill
-  ) %>%
-  ungroup() %>%
-  # 5) Pivot back to wide format (optional)
-  pivot_wider(
-    names_from = "Country",
-    values_from = "AnnReturn"
-  )
-
-# Now 'annualized_returns_chopped' looks like the original
-# but with outliers replaced and filled.
+# #######################################################################
+# library(dplyr)
+# library(tidyr)
+# library(zoo)
+# 
+# # Assume 'annualized_returns' has columns: date, plus one column per country
+# # e.g. date, UNITED STATES, GERMANY, JAPAN, etc.
+# 
+# annualized_returns_chopped <- annualized_returns %>%
+#   # 1) Pivot to long format
+#   pivot_longer(
+#     cols = -date,
+#     names_to = "Country",
+#     values_to = "AnnReturn"
+#   ) %>%
+#   # 2) Arrange by date & group by country
+#   group_by(Country) %>%
+#   arrange(date, .by_group = TRUE) %>%
+#   # 3) Chop values above +500% or below -500% (±5 in decimal), replace w/ NA
+#   mutate(
+#     AnnReturn = if_else(abs(AnnReturn) > 10, NA_real_, AnnReturn)
+#   ) %>%
+#   # 4) Fill newly introduced NAs forward, then backward
+#   mutate(
+#     AnnReturn = na.locf(AnnReturn, na.rm = FALSE),          # forward fill
+#     AnnReturn = na.locf(AnnReturn, fromLast = TRUE, na.rm = FALSE) # backward fill
+#   ) %>%
+#   ungroup() %>%
+#   # 5) Pivot back to wide format (optional)
+#   pivot_wider(
+#     names_from = "Country",
+#     values_from = "AnnReturn"
+#   )
+# 
+# # Now 'annualized_returns_chopped' looks like the original
+# # but with outliers replaced and filled.
 
 
 ########################################################################################
@@ -500,7 +500,7 @@ plot_list_ex_ret<- list()
 
 for (i in 1:10) {
   column_name <- Countries[i]
-  plot_list_ex_ret[[i]] <- ggplot(annualized_returns_chopped, aes(x = date, y = !!sym(column_name))) +
+  plot_list_ex_ret[[i]] <- ggplot(annualized_returns, aes(x = date, y = !!sym(column_name))) +
     geom_line() +
     theme_minimal() +
     labs(x = "Date", y = "Bond Excess Return", title = paste(column_name))+
@@ -518,38 +518,4 @@ grid.arrange(grobs = plot_list_ex_ret, ncol = 2)
 
 
 ###################### explore data anomalies ######################
-
-# do the NA, missing, or very small values in the data analysis
-# check for missing values
-missing_values <- function(data){
-  data %>%
-    summarise_all(~ sum(is.na(.)))
-}
-
-missing_values(Bonds_prices_3M)
-missing_values(Bonds_prices_10Y)
-missing_values(Exchange_rates)
-missing_values(annualized_returns)
-
-# check for very small values
-small_values <- function(data){
-  data %>%
-    summarise_all(~ sum(. < 0.01))
-}
-
-small_values(Bonds_prices_3M)
-small_values(Bonds_prices_10Y)
-small_values(Exchange_rates)
-small_values(annualized_returns)
-# check for negative values
-negative_values <- function(data){
-  data %>%
-    summarise_all(~ sum(. < 0))
-}
-
-negative_values(Bonds_prices_3M)
-negative_values(Bonds_prices_10Y)
-negative_values(Exchange_rates)
-
-# Bonds_prices_3M, Bonds_prices_10Y,Exchange_rates
 
