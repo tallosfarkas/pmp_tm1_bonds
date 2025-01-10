@@ -674,7 +674,7 @@ ggplot(weights_melted, aes(x = Date, y = Weight, fill = Country)) +
 
 
 
-
+library(ggplot2)
 library(RColorBrewer)
 
 # Choose a softer color palette (e.g., "Set3")
@@ -727,7 +727,15 @@ compute_portfolio_returns <- function(weights_list, excess_returns_matrix) {
   return(portfolio_returns)
 }
 
-UMVE_port <- compute_portfolio_returns(umve_weights, annualized_returns)
+length(umve_weights)
+dim(annualized_returns)
+# remove the rows of the annualized returns that are before 2000-12-29
+annualized_returns_aligned <- annualized_returns[annualized_returns$date >= as.Date("2000-12-29"), ]
+
+UMVE_port <- compute_portfolio_returns(umve_weights, annualized_returns_aligned)
+
+
+
 print(UMVE_port)
 mean(UMVE_port)
 plot(UMVE_port, type = "l", col = "blue", xlab = "Time", ylab = "Portfolio Return", main = "UMVE Portfolio Returns")
@@ -826,7 +834,7 @@ plot(cumsum(UMVE_port) * 100, type = "l", col = "darkblue",
 
 
 
-
+library(ggplot2)
 
 
 # Define the dimensions for Full HD (16:9 aspect ratio)
