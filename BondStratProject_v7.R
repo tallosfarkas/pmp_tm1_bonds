@@ -824,13 +824,25 @@ stargazer(returns_summary, type = "text", summary = FALSE, rownames = FALSE,
 hist(umve_weights_unlist * 100, breaks = 50, col = "blue", 
      xlab = "Portfolio Weights (in %)", main = "Distribution of Portfolio Weights")
 
+# Generate the sequence of dates
+dates <- seq.Date(from = as.Date("2001-01-01"), by = "month", length.out = length(UMVE_port))
+
 # Portfolio Returns over Time
-plot(UMVE_port * 100, type = "l", col = "blue", 
-     xlab = "Time", ylab = "Portfolio Return (in %)", main = "UMVE Portfolio Returns Over Time")
+plot(dates, UMVE_port * 100, type = "l", col = "blue", lwd = 2,
+     xlab = "Date", ylab = "Portfolio Return (in %)", main = "UMVE Portfolio Returns Over Time",
+     xaxt = "n")  # Suppress default x-axis
+axis(1, at = seq(from = as.Date("2000-12-31"), to = as.Date("2022-12-31"), by = "2 years"), 
+     labels = format(seq(from = as.Date("2000-12-31"), to = as.Date("2022-12-31"), by = "2 years"), "%Y"))
+grid(nx = NULL, ny = NULL, col = "gray", lty = "dotted")  # Add grid lines
 
 # Cumulative Portfolio Returns
-plot(cumsum(UMVE_port) * 100, type = "l", col = "darkblue", 
-     xlab = "Time", ylab = "Cumulative Return (in %)", main = "Cumulative Portfolio Returns")
+plot(dates, cumsum(UMVE_port) * 100, type = "l", col = "darkblue", lwd = 2,
+     xlab = "Date", ylab = "Cumulative Return (in %)", main = "UMVE Cumulative Portfolio Returns",
+     xaxt = "n")  # Suppress default x-axis
+axis(1, at = seq(from = as.Date("2000-12-31"), to = as.Date("2022-12-31"), by = "2 years"), 
+     labels = format(seq(from = as.Date("2000-12-31"), to = as.Date("2022-12-31"), by = "2 years"), "%Y"))
+grid(nx = NULL, ny = NULL, col = "gray", lty = "dotted")  # Add grid lines
+
 
 
 
@@ -865,16 +877,27 @@ hist(umve_weights_unlist * 100, breaks = 50, col = "blue",
      xlab = "Portfolio Weights (in %)", main = "Distribution of Portfolio Weights")
 dev.off()
 
-# Save the Portfolio Returns Over Time Plot
-png("Portfolio_Returns_Over_Time.png", width = width, height = height, res = 150)
-plot(UMVE_port * 100, type = "l", col = "blue", 
-     xlab = "Time", ylab = "Portfolio Return (in %)", main = "UMVE Portfolio Returns Over Time")
+# Define the time range for the x-axis
+dates <- seq.Date(from = as.Date("2001-01-01"), to = as.Date("2022-12-31"), by = "month")
+
+# Enhanced Portfolio Returns Over Time Plot
+png("Enhanced_Portfolio_Returns_Over_Time.png", width = width, height = height, res = 150)
+plot(dates, UMVE_port * 100, type = "l", col = "blue", lwd = 2,
+     xlab = "Year", ylab = "Portfolio Return (in %)", main = "UMVE Portfolio Returns Over Time",
+     xaxt = "n")  # Suppress default x-axis
+axis(1, at = seq(from = as.Date("2000-12-31"), to = as.Date("2022-12-31"), by = "2 years"), 
+     labels = format(seq(from = as.Date("2000-12-31"), to = as.Date("2022-12-31"), by = "2 years"), "%Y"))
+grid(nx = NULL, ny = NULL, col = "gray", lty = "dotted")  # Add grid lines
 dev.off()
 
-# Save the Cumulative Portfolio Returns Plot
-png("Cumulative_Portfolio_Returns.png", width = width, height = height, res = 150)
-plot(cumsum(UMVE_port) * 100, type = "l", col = "darkblue", 
-     xlab = "Time", ylab = "Cumulative Return (in %)", main = "Cumulative Portfolio Returns")
+# Enhanced Cumulative Portfolio Returns Plot
+png("Enhanced_Cumulative_Portfolio_Returns.png", width = width, height = height, res = 150)
+plot(dates, cumsum(UMVE_port) * 100, type = "l", col = "darkblue", lwd = 2,
+     xlab = "Year", ylab = "Cumulative Return (in %)", main = "UMVE Cumulative Portfolio Returns",
+     xaxt = "n")  # Suppress default x-axis
+axis(1, at = seq(from = as.Date("2000-12-31"), to = as.Date("2022-12-31"), by = "2 years"), 
+     labels = format(seq(from = as.Date("2000-12-31"), to = as.Date("2022-12-31"), by = "2 years"), "%Y"))
+grid(nx = NULL, ny = NULL, col = "gray", lty = "dotted")  # Add grid lines
 dev.off()
 
 # Save the Descriptive Statistics Tables
