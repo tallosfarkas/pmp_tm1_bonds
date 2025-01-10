@@ -829,5 +829,64 @@ plot(cumsum(UMVE_port) * 100, type = "l", col = "darkblue",
 
 
 
+# Define the dimensions for Full HD (16:9 aspect ratio)
+width <- 1920
+height <- 1080
+
+# Save the Time Series Plot of Portfolio Weights
+png("Time_Series_Portfolio_Weights.png", width = width, height = height, res = 150)
+ggplot(weights_melted, aes(x = Date, y = Weight, fill = Country)) +
+  geom_area(alpha = 0.8, size = 0.2, colour = "black") +
+  scale_fill_manual(values = brewer.pal(n = length(unique(weights_melted$Country)), "Set3")) +
+  labs(
+    title = "Time Series of Portfolio Weights",
+    x = "Date",
+    y = "UMVE Portfolio Weights",
+    fill = "Country"
+  ) +
+  theme_minimal() +
+  theme(
+    text = element_text(size = 12),
+    legend.position = "bottom"
+  )
+dev.off()
+
+# Save the Portfolio Weights Distribution Plot
+png("Portfolio_Weights_Distribution.png", width = width, height = height, res = 150)
+hist(umve_weights_unlist * 100, breaks = 50, col = "blue", 
+     xlab = "Portfolio Weights (in %)", main = "Distribution of Portfolio Weights")
+dev.off()
+
+# Save the Portfolio Returns Over Time Plot
+png("Portfolio_Returns_Over_Time.png", width = width, height = height, res = 150)
+plot(UMVE_port * 100, type = "l", col = "blue", 
+     xlab = "Time", ylab = "Portfolio Return (in %)", main = "UMVE Portfolio Returns Over Time")
+dev.off()
+
+# Save the Cumulative Portfolio Returns Plot
+png("Cumulative_Portfolio_Returns.png", width = width, height = height, res = 150)
+plot(cumsum(UMVE_port) * 100, type = "l", col = "darkblue", 
+     xlab = "Time", ylab = "Cumulative Return (in %)", main = "Cumulative Portfolio Returns")
+dev.off()
+
+# Save the Descriptive Statistics Tables
+library(gridExtra)
+library(grid)
+
+# Convert weights_summary and returns_summary into tables for plotting
+weights_table <- tableGrob(weights_summary, rows = NULL)
+returns_table <- tableGrob(returns_summary, rows = NULL)
+
+# Save weights_summary to a PNG
+png("Weights_Descriptive_Statistics.png", width = width, height = height, res = 150)
+grid.newpage()
+grid.draw(weights_table)
+dev.off()
+
+# Save returns_summary to a PNG
+png("Returns_Descriptive_Statistics.png", width = width, height = height, res = 150)
+grid.newpage()
+grid.draw(returns_table)
+dev.off()
 
 
