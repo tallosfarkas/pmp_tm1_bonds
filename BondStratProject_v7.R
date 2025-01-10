@@ -1,10 +1,7 @@
-setwd("C:/Users/Student1.AzureAD/Documents/R")
-
-getwd()
-
 load("BBG_BondTicker.RData")
 
 install.packages("corrplot", dependencies = TRUE)
+install.packages("gt", dependencies = TRUE)
 
 library(openxlsx)
 library(dplyr)
@@ -15,6 +12,9 @@ library(rlang)
 library(gridExtra)
 library(corrplot)
 library(lubridate)
+library(gt)
+library(RColorBrewer)
+
 
 
 
@@ -30,23 +30,23 @@ G10 <- c("AUSTRALIA","CANADA","GERMANY","JAPAN","NEW ZEALAND","NORWAY","SWEDEN",
 
 Tickers <- DT$ticker[DT$country %in% G10]
 
-Tickers
+Tickers_9Y <- c("I00109Y Index", "I00709Y Index",
+                "I01609Y Index", "I01809Y Index",
+                "I04909Y Index", "I07809Y Index",
+                "I02109Y Index", "I08209Y Index",
+                "I02209Y Index", "I02509Y Index")
 
-# Only look at Gov. Bond 1-Month, and 10-Y
+# Extracting Bond Yields
 
 Tickers <- Tickers[grepl("3M|10Y",Tickers)]
 
-Tickers
+Tickers_3m_10Y_9Y <- c(Tickers, Tickers_9Y)
+
 
 opt <- c("periodicitySelection"="DAILY")
-Gov_Bonds <- bdh(Tickers, c("PX_LAST"),
+Gov_Bonds <- bdh(Tickers_3m_10Y_9Y, c("PX_LAST"),
                  as.Date("1995-01-01"), as.Date("2023-01-01"), options=opt)
 
-##########################################################################################################################
-
-# Create synthetic prices
-
-Gov_Bonds_Prices <- 100 / (1+ Gov_Bonds/100)^(1/4)
 
 exchange_tickers <- c("AUDUSD Curncy", # Australia
                       "CADUSD Curncy", # Canada
@@ -61,6 +61,8 @@ exchange_tickers <- c("AUDUSD Curncy", # Australia
 
 Exchange_rate <- bdh(exchange_tickers, c("PX_LAST"),
                      as.Date("1995-01-01"), as.Date("2023-01-01"), options=opt)
+
+##################################################################################
 
 # Create a new workbook
 wb <- createWorkbook()
@@ -194,48 +196,55 @@ par(mfrow = c(1, 1))
 ################################################################################
 
 #Setting the names from the Bloomberg Output
-Countries <- c("AUSTRALIA","CANADA","GERMANY","JAPAN","SWEDEN","BRITIAN","UNITED STATES","NEW ZEALAND","NORWAY","SWITZERLAND")
+Countries <- c("AUSTRALIA","CANADA","GERMANY","JAPAN","SWEDEN","BRITAIN","UNITED STATES","NEW ZEALAND","NORWAY","SWITZERLAND")
 Bond_names_3M <- rep("3M",10)
 Bond_names_9Y <-rep("9Y",10)
 Bond_names_10Y <-rep("10Y",10)
 Bond_names_3M <- paste(Countries,Bond_names_3M)
 Bond_names_9Y <- paste(Countries,Bond_names_9Y)
 Bond_names_10Y <- paste(Countries,Bond_names_10Y)
-FX_names <- c("GBPUSD Curncy",
-              "USDUSD Curncy",
-              "AUDUSD Curncy",
+FX_names <- c("AUDUSD Curncy",
               "CADUSD Curncy",
               "EURUSD Curncy",
               "JPYUSD Curncy",
-              "NZDUSD Curncy", 
+              "SEKUSD Curncy",
+              "GBPUSD Curncy",
+              "USDUSD Curncy",
+              "NZDUSD Curncy",
               "NOKUSD Curncy",
-              "SEKUSD Curncy", 
               "CHFUSD Curncy")
 
 #Create the Ticker sequence for the Loop
-Ticker_seq <- seq(from = 1, to = 19, by = 2)
-FX_Tickers <- c(rep(FX_names,each = 2))
+
+Ticker_seq_extra <- seq(from = 1, to = 28, by = 3)
+Ticker_seq_extra
+Tickers_extra <- sort(names(Gov_Bonds))
+Tickers_extra
+FX_Tickers_extra <- c(rep(FX_names,each = 3))
 length(FX_Tickers)
-B_3M_Tickers <- c(rep(Bond_names_3M,each = 2))
+B_3M_Tickers <- c(rep(Bond_names_3M,each = 3))
 typeof(B_3M_Tickers)
-B_9Y_Tickers <- c(rep(Bond_names_9Y,each = 2))
+B_9Y_Tickers <- c(rep(Bond_names_9Y,each = 3))
 typeof(B_9Y_Tickers)
-B_10Y_Tickers <- c(rep(Bond_names_10Y,each = 2))
+B_10Y_Tickers <- c(rep(Bond_names_10Y,each = 3))
 typeof(B_10Y_Tickers)
 
 
 #Setting the time frame
 #United States: largest data range
-time_frame_raw <- Gov_Bonds[[Tickers[19]]][1]
+time_frame_raw <- Gov_Bonds[[Tickers_extra[13]]][1]
 time_frame <- as.Date(time_frame_raw[[1]])
 time_frame
 length(time_frame)
 length(unique(time_frame))
 
 #Add USD currency list to exchange rate
-USDUSD_Curncy <- data.frame(date = time_frame,PX_LAST = rep(1,length(time_frame)))
-exchange_rate_complete <- append(Exchange_rate,list(USDUSD_Curncy))
-names(exchange_rate_complete)[length(exchange_rate_complete)] <- "USDUSD Curncy"
+USDUSD_Curncy <- data.frame(date = time_frame, PX_LAST = rep(1, length(time_frame)))
+exchange_rate_complete_old <- append(Exchange_rate, list(USDUSD_Curncy))
+names(exchange_rate_complete_old)[length(exchange_rate_complete_old)] <- "USDUSD Curncy"
+
+exchange_rate_complete <- exchange_rate_complete_old[FX_names]
+names(exchange_rate_complete)
 
 #Create data frames for end result:
 Bonds_yields_3M <- data.frame(matrix(NA, nrow = length(time_frame), ncol = 10))
@@ -251,47 +260,6 @@ rownames(Bonds_yields_9Y) <- time_frame
 rownames(Bonds_yields_10Y) <- time_frame
 rownames(Exchange_rates) <- time_frame
 
-
-
-
-#Setting the same time frame for every data and interpolate missing values
-for(i in Ticker_seq){
-  #Data for each Country
-  df1 <- data.frame(date = as.Date(Gov_Bonds[[Tickers[i]]][[1]]),data = Gov_Bonds[[Tickers[i]]][[2]])
-  df2 <- data.frame(date = as.Date(Gov_Bonds[[Tickers[i+1]]][[1]]),data = Gov_Bonds[[Tickers[i+1]]][[2]])
-  df3 <- data.frame(date = as.Date(exchange_rate_complete[[FX_Tickers[i]]][[1]]),data = exchange_rate_complete[[FX_Tickers[i]]][[2]])
-  
-  zoo_df1 <- zoo(df1$data, order.by = df1$date)
-  zoo_df2 <- zoo(df2$data, order.by = df2$date)
-  zoo_df3 <- zoo(df3$data, order.by = df3$date)
-  
-  # Reindex each zoo object to match the target date vector and set missing values to NA
-  zoo_reindexed_1 <- merge(zoo_df1, zoo(, time_frame), all = TRUE)
-  zoo_reindexed_2 <- merge(zoo_df2, zoo(, time_frame), all = TRUE)
-  zoo_reindexed_3 <- merge(zoo_df3, zoo(, time_frame), all = TRUE)
-  
-  zoo_interpolated_1 <- na.approx(zoo_reindexed_1, xout = time_frame, na.rm = FALSE)
-  zoo_interpolated_2 <- na.approx(zoo_reindexed_2, xout = time_frame, na.rm = FALSE)
-  zoo_interpolated_3 <- na.approx(zoo_reindexed_3, xout = time_frame, na.rm = FALSE)
-  
-  # Perform linear interpolation for missing values for each sequence
-  Bonds_yields_3M[[B_3M_Tickers[i]]] <- coredata(zoo_interpolated_1)
-  Bonds_yields_10Y[[B_10Y_Tickers[i]]] <- coredata(zoo_interpolated_2)
-  Exchange_rates[[FX_Tickers[i]]] <- coredata(zoo_interpolated_3)
-}
-
-Ticker_seq_extra <- seq(from = 1, to = 28, by = 3)
-Ticker_seq_extra
-Tickers_extra <- sort(names(Gov_Bonds))
-Tickers_extra
-FX_Tickers_extra <- c(rep(FX_names,each = 3))
-length(FX_Tickers)
-B_3M_Tickers <- c(rep(Bond_names_3M,each = 3))
-typeof(B_3M_Tickers)
-B_9Y_Tickers <- c(rep(Bond_names_9Y,each = 3))
-typeof(B_9Y_Tickers)
-B_10Y_Tickers <- c(rep(Bond_names_10Y,each = 3))
-typeof(B_10Y_Tickers)
 
 #Setting the same time frame for every data and interpolate missing values
 for(i in Ticker_seq_extra){
@@ -324,7 +292,7 @@ for(i in Ticker_seq_extra){
   Exchange_rates[[FX_Tickers_extra[i]]] <- coredata(zoo_interpolated_4)
 }
 
-#Create synthetic prices from Yields
+#Create synthetic prices from Yields and add date column
 
 Bonds_prices_3M <- 1 / ((1+ Bonds_yields_3M/100))^(1/4) 
 
@@ -349,29 +317,22 @@ Bonds_prices_9Y <- Bonds_prices_9Y  %>%
 
 Bonds_prices_10Y3M <- 1 / ( 1 + (Bonds_yields_9Y/100 + (Bonds_yields_10Y/100 - Bonds_yields_9Y/100) * (1 - 1/12)))^(9 + 11/12)
 
-#Add a date column
 Bonds_prices_10Y3M <- Bonds_prices_10Y3M   %>% 
+  mutate( 
+    date=time_frame
+  )
+
+#Add a date column to the Exchange Rates
+Exchange_rates <- Exchange_rates   %>% 
   mutate( 
     date=time_frame
   )
 
 
 #Plotting and Observing the Data
-################################################################################
+###############################################################################
 
-#Add new column for the date
-Bonds_prices_3M$date <- as.Date(rownames(Bonds_prices_3M))
-Bonds_prices_10Y$date <- as.Date(rownames(Bonds_prices_10Y))
-Exchange_rates$date <-  as.Date(rownames(Exchange_rates))
 
-##Correcting Outliers:
-#Japan One Year Bond Price --> Possible Missing Data 
-outlier_Jap_date <- Bonds_prices_10Y$date[Bonds_prices_10Y$`JAPAN 10Y`== 0]
-#Use the mean of the last 10 days to replace the outlier/missing data
-index <- which(Bonds_prices_10Y$date == outlier_Jap_date)
-Replacement <- mean(Bonds_prices_10Y$`JAPAN 10Y`[(index-10):(index-1)])
-Bonds_prices_10Y$`JAPAN 10Y`[index] <- Replacement
-  
 ##Plots with corrected values:
 plot_list_3M <- list()
 plot_list_10Y <- list()
@@ -435,11 +396,11 @@ corrplot(correlation_matrix_3M, method = "color", type = "upper",
 title("Correlation Matrix of 3M Bond Prices", cex.main = 1)
 
 corrplot(correlation_matrix_10Y, method = "color", type = "upper", 
-        col = colorRampPalette(c("blue", "white", "red"))(200), 
-        tl.col = "black", tl.srt = 45, addCoef.col = "black", 
-        tl.cex = 0.7, # Adjust font size of text labels
-        cl.cex = 0.6, # Adjust font size of color legend
-        number.cex = 0.6) # Adjust font size of correlation coefficients
+         col = colorRampPalette(c("blue", "white", "red"))(200), 
+         tl.col = "black", tl.srt = 45, addCoef.col = "black", 
+         tl.cex = 0.7, # Adjust font size of text labels
+         cl.cex = 0.6, # Adjust font size of color legend
+         number.cex = 0.6) # Adjust font size of correlation coefficients
 
 title("Correlation Matrix of 10Y Bond Prices", cex.main = 1)
 
@@ -509,44 +470,80 @@ Merged_Bonds_FX <- Merged_Bonds_FX %>%
 
 #4. 
 
-
+# Isolate Returns from Total Excess Return
 
 Merged_Bonds_FX <- Merged_Bonds_FX %>%
   mutate(
     excess_return = ((((P_10Y3M) / P_10Y_prev) - (1 / P_3M_prev)) * (FX / FX_prev))
   )
 
-
-
-
-
 Bonds_ex_ret_long <- Merged_Bonds_FX %>%
   select(
     Country, date, excess_return
-    )
+  )
 
 Bonds_ex_ret_wide <- Bonds_ex_ret_long %>%
   pivot_wider(names_from = Country, values_from = excess_return)
 
 annualized_returns <- Bonds_ex_ret_wide %>%
-  mutate(across(-date, ~ (1 + .)^12 - 1))
+  mutate(across(-date, ~ exp(. * 12) - 1))
 
-#Calculate the Mean Excess Gov Bond Return
+#Descriptive Statistics
 
-colMeans(annualized_returns[,-1], na.rm = TRUE)*100
-
+col_Means <- colMeans(annualized_returns[,-1], na.rm = TRUE)*100
 col_variance <- sapply(annualized_returns[-1,-1]*100, var)
+col_Medians <-  sapply(annualized_returns[-1,-1]*100, median)
+Sharpe_Ratio <- col_Means / sqrt(col_variance)
 
-sqrt(col_variance)
+des_stats <- as.data.frame(cbind(col_Means,sqrt(col_variance),col_Medians,Sharpe_Ratio))
+
+des_stats <- data.frame(Country = rownames(des_stats), des_stats)
+
+colnames(des_stats) <- c("Country","Mean","Volatility","Median","Sharpe-Ratio")
 
 
-col_variance
-sweep(annualized_returns[-1,-1],2, 'var')
+des_stats %>%
+  gt() %>%
+  tab_header(
+    title = "Descriptive Statistics Bond Excess Returns"
+  ) %>%
+  fmt_number(
+    columns = c("Mean","Volatility","Median","Sharpe-Ratio"),
+decimals = 3
+)
 
-annualized_returns[,-1]
-CPI_pi
-Value
-middle_of_month_data_Y
+#5. Plot Excess Returns
+
+plot_list_ex_ret<- list()
+
+for (i in 1:10) {
+  column_name <- Countries[i]
+  plot_list_ex_ret[[i]] <- ggplot(annualized_returns, aes(x = date, y = !!sym(column_name))) +
+    geom_line() +
+    theme_minimal() +
+    labs(x = "Date", y = "Bond Excess Return", title = paste(column_name))+
+    theme(
+      axis.title.x = element_text(size = 5),  
+      axis.title.y = element_text(size = 5),  
+      axis.text.x = element_text(size = 4),    
+      axis.text.y = element_text(size = 4),    
+      plot.title = element_text(size = 7) 
+    )
+}
+
+grid.arrange(grobs = plot_list_ex_ret, ncol = 3)
+
+correlation_matrix_returns <- cor(annualized_returns[-1,-1])
+
+par(mar = c(1, 5, 2, 2))
+corrplot(correlation_matrix_returns, method = "color", type = "upper", 
+         col = colorRampPalette(c("blue", "white", "red"))(200), 
+         tl.col = "black", tl.srt = 45, addCoef.col = "black", 
+         tl.cex = 0.7, # Adjust font size of text labels
+         cl.cex = 0.6, # Adjust font size of color legend
+         number.cex = 0.6) # Adjust font size of correlation coefficients
+
+########################################################################
 
 Merged_Bonds_FX <- Merged_Bonds_FX %>%
   mutate(
